@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import type { TransactionService } from '../../services/transaction.service';
 import type { LimitService } from '../../services/limit.service';
+import type { UserService } from '../../services/user.service';
 import { amountSchema } from '../../domain/schemas';
 
 const CreateTransactionBody = z.object({
@@ -63,7 +64,11 @@ const TransactionHistoryResponse = z.object({
   }),
 });
 
-export function transactionRoutes(transactionService: TransactionService, limitService: LimitService) {
+export function transactionRoutes(
+  transactionService: TransactionService,
+  limitService: LimitService,
+  userService: UserService,
+) {
   return async function (app: FastifyInstance) {
     const typed = app.withTypeProvider<ZodTypeProvider>();
 
@@ -92,6 +97,7 @@ export function transactionRoutes(transactionService: TransactionService, limitS
         },
       },
       async (request, reply) => {
+        await userService.getUserById(request.params.userId);
         const usage = await limitService.getLimitUsage(request.params.userId, new Date());
         return reply.send({
           userId: usage.userId,

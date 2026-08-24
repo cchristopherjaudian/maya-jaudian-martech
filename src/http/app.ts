@@ -48,7 +48,9 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   }));
 
   await app.register(userRoutes(deps.userService), { prefix: '/api' });
-  await app.register(transactionRoutes(deps.transactionService, deps.limitService), { prefix: '/api' });
+  await app.register(transactionRoutes(deps.transactionService, deps.limitService, deps.userService), {
+    prefix: '/api',
+  });
 
   return app;
 }

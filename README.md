@@ -147,15 +147,20 @@ Copy `.env.example` to `.env` and adjust as needed:
 | `NODE_ENV` | Environment (`development`, `production`) | `development` |
 | `LOG_LEVEL` | Pino log level (`debug`, `info`, `warn`, `error`) | `info` |
 
+> **Note on committed credentials**: `docker-compose.yml` and `.env` hardcode a database username/password (`martech_user` / `martech_pass`). This is intentional for this technical assessment — it lets a reviewer run `docker compose up` with zero manual setup. In a real production system these would be injected via a secrets manager and never committed.
+
 ---
 
 ## Running Tests
 
 ```bash
 npm install
-npm test
+npm test                  # unit tests — no database required
 npm run test:coverage
+npm run test:integration  # integration tests — requires a reachable PostgreSQL instance
 ```
+
+Integration tests (`tests/*.integration.test.ts`) exercise the full HTTP stack against a real database. They connect to `TEST_DATABASE_URL` (defaults to `postgresql://martech_user:martech_pass@localhost:5432/martech_test_db`, i.e. the same Postgres instance started by `docker compose up`, using a separate database). A global setup step creates that database if missing and (re)applies the schema from `prisma/migrations` before each run; `beforeEach` truncates all tables so tests never see another test's data.
 
 ---
 
@@ -205,4 +210,4 @@ The Zod schema for `amount` enforces the regex `/^\d+(\.\d{1,2})?$/` plus a posi
 4. **Rate limiting** — no per-IP or per-user rate limiting.
 5. **Observability** — structured logging is in place (Pino) but no distributed tracing or metrics (Prometheus/OpenTelemetry).
 6. **Mobile number validation** — currently any non-empty string is accepted. Production would enforce E.164 format.
-7. **Integration test isolation** — integration tests require a real PostgreSQL instance; Testcontainers setup is recommended to avoid cross-test pollution.
+7. **Integration test isolation** — integration tests currently reuse the `docker compose` Postgres instance via a dedicated `martech_test_db` database. Testcontainers would give each CI run a fully disposable database instead.

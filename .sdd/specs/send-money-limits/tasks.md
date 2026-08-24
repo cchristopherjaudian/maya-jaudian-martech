@@ -172,9 +172,9 @@
 
 ---
 
-- [ ] 10. Write integration tests exercising the full HTTP stack against a live database
+- [x] 10. Write integration tests exercising the full HTTP stack against a live database
 
-- [ ] 10.1 (P) Integration tests for the send-money transaction flow
+- [x] 10.1 (P) Integration tests for the send-money transaction flow
   - Provision isolated test users before each test suite; use a dedicated test database or Testcontainers to avoid cross-test pollution
   - Test happy path: POST /api/transactions returns 201 with correct id, senderId, recipientId, amount (as a decimal string), currency PHP, status COMPLETED, and a valid ISO 8601 createdAt
   - Test daily limit breach: accumulate transactions totalling ₱49,999.99, then submit ₱0.02; expect 422 with error code DAILY_LIMIT_EXCEEDED and a remaining field of "49999.99"
@@ -184,7 +184,7 @@
   - Can run in parallel with Task 10.2 once Task 8 is complete
   - _Requirements: 2.1, 2.4, 2.5, 2.7, 3.5, 3.6, 3.7, 8.1, 8.2, 8.3_
 
-- [ ] 10.2 (P) Integration tests for the limit usage and transaction history endpoints
+- [x] 10.2 (P) Integration tests for the limit usage and transaction history endpoints
   - Test GET /api/users/:id/limits after a known completed transaction: daily and monthly spent equal the transaction amount, remaining equals the full limit minus that amount
   - Test GET /api/users/:id/limits for a fresh user with no transactions: spent is "0.00" and remaining equals the full limit for both periods
   - Test GET /api/users/:id/transactions: both a sent and a received transaction for the same user appear in the results, each with the correct direction value (SENT or RECEIVED)

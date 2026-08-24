@@ -46,12 +46,19 @@ const mockLimitService = {
   checkLimits: vi.fn(),
 };
 
+const mockUserService = {
+  getUserById: vi.fn(),
+};
+
 function buildApp() {
   const app = Fastify({ logger: false });
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   registerErrorHandler(app);
-  app.register(transactionRoutes(mockTransactionService as never, mockLimitService as never), { prefix: '/api' });
+  app.register(
+    transactionRoutes(mockTransactionService as never, mockLimitService as never, mockUserService as never),
+    { prefix: '/api' },
+  );
   return app;
 }
 
@@ -135,6 +142,7 @@ describe('Transaction Routes', () => {
 
   describe('GET /api/users/:userId/limits', () => {
     it('returns 200 with limit usage', async () => {
+      mockUserService.getUserById.mockResolvedValue({ id: SENDER_ID });
       mockLimitService.getLimitUsage.mockResolvedValue(mockLimitUsage);
       const app = buildApp();
       const res = await app.inject({ method: 'GET', url: `/api/users/${SENDER_ID}/limits` });
@@ -146,11 +154,20 @@ describe('Transaction Routes', () => {
       expect(typeof body.daily.resetsAt).toBe('string');
     });
 
-    it('returns 404 on UserNotFoundError', async () => {
+    it('returns 404 on UserNotFoundError from getLimitUsage', async () => {
+      mockUserService.getUserById.mockResolvedValue({ id: 'x' });
       mockLimitService.getLimitUsage.mockRejectedValue(new UserNotFoundError('x'));
       const app = buildApp();
       const res = await app.inject({ method: 'GET', url: '/api/users/x/limits' });
       expect(res.statusCode).toBe(404);
+    });
+
+    it('returns 404 when the user does not exist, without calling getLimitUsage', async () => {
+      mockUserService.getUserById.mockRejectedValue(new UserNotFoundError('x'));
+      const app = buildApp();
+      const res = await app.inject({ method: 'GET', url: '/api/users/x/limits' });
+      expect(res.statusCode).toBe(404);
+      expect(mockLimitService.getLimitUsage).not.toHaveBeenCalled();
     });
   });
 
