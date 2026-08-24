@@ -35,7 +35,7 @@
   - Run `prisma migrate dev` to produce the first migration file under prisma/migrations
   - _Requirements: 7.1, 7.2_
 
-- [ ] 2.2 Create the database seed script with representative sample data
+- [x] 2.2 Create the database seed script with representative sample data
   - Seed at least five users with distinct mobile numbers, first names, and last names so every seed user has a known identity for testing
   - Seed a set of completed transactions between seeded users that cover varied amounts across both daily and monthly periods, ensuring limit queries return non-zero results immediately after startup
   - Configure prisma db seed in package.json and invoke it from the Docker entrypoint after the migration step

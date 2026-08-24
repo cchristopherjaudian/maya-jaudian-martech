@@ -22,6 +22,7 @@ RUN npm ci
 
 COPY --from=builder /app/dist ./dist
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 
 # Generate the Prisma client for this platform
 RUN npx prisma generate
