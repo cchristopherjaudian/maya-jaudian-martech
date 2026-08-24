@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyError } from 'fastify';
 import {
   AppError,
   UserNotFoundError,
@@ -6,7 +6,7 @@ import {
 } from '../../domain';
 
 export function registerErrorHandler(app: FastifyInstance): void {
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error: FastifyError, _request, reply) => {
     if (error instanceof AppError) {
       const body: Record<string, unknown> = {
         statusCode: error.statusCode,
@@ -24,12 +24,12 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
 
     // Fastify validation errors (Zod)
-    if (error.statusCode === 400 || (error as { validation?: unknown }).validation) {
+    if (error.statusCode === 400 || (error as FastifyError & { validation?: unknown }).validation) {
       return reply.status(422).send({
         statusCode: 422,
         error: 'VALIDATION_ERROR',
         message: error.message,
-        details: { fields: (error as { validation?: unknown[] }).validation ?? [] },
+        details: { fields: (error as FastifyError & { validation?: unknown[] }).validation ?? [] },
       });
     }
 
