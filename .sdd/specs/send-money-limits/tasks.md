@@ -152,9 +152,9 @@
 
 ---
 
-- [ ] 9. Write unit tests for core business logic and input validation
+- [x] 9. Write unit tests for core business logic and input validation
 
-- [ ] 9.1 (P) Unit tests for LimitService covering all boundary and timezone cases
+- [x] 9.1 (P) Unit tests for LimitService covering all boundary and timezone cases
   - Test daily cap boundary: a transaction that brings the total to exactly ₱50,000 is allowed; one that brings it to ₱50,000.01 is rejected with DAILY_LIMIT_EXCEEDED and the correct remaining value
   - Test monthly cap boundary: same pattern with ₱500,000 and MONTHLY_LIMIT_EXCEEDED
   - Test PHT daily reset: a transaction timestamped at 23:59:59.999 PHT counts in the current day; one at 00:00:00.000 PHT the next moment falls in a new day with a fresh zero total
@@ -163,7 +163,7 @@
   - Mock TransactionRepository.sumByPeriod to return controlled string values and inject deterministic now: Date values
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 8.1, 8.3_
 
-- [ ] 9.2 (P) Unit tests for TransactionService guards and Zod amount validation
+- [x] 9.2 (P) Unit tests for TransactionService guards and Zod amount validation
   - Test that sendMoney throws SelfTransferError when senderId equals recipientId
   - Test the amount Zod schema: rejects "0", "-1.00", "1500.001", "abc", and empty string; accepts "1500.10", "50000.00", "1", and "0.99"
   - Mock UserRepository, LimitService, and TransactionRepository to isolate TransactionService from any database concern

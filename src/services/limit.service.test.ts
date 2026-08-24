@@ -65,6 +65,116 @@ describe('LimitService', () => {
     });
   });
 
+  // ─── Task 9.1: PHT timezone reset boundaries ───────────────────────────────
+
+  describe('PHT daily reset boundary', () => {
+    // Last millisecond of PHT day 2026-08-24 → 2026-08-24T15:59:59.999Z
+    const LAST_MS_OF_DAY_PHT = new Date('2026-08-24T15:59:59.999Z');
+    // First millisecond of PHT day 2026-08-25 → 2026-08-24T16:00:00.000Z
+    const FIRST_MS_OF_NEXT_DAY_PHT = new Date('2026-08-24T16:00:00.000Z');
+
+    it('23:59:59.999 PHT counts in the current day (boundary start = prev midnight PHT)', async () => {
+      mockRepo.sumByPeriod.mockResolvedValue('0.00');
+
+      await service.checkLimits('uid', '1.00', LAST_MS_OF_DAY_PHT);
+
+      const [, dailyPeriod] = mockRepo.sumByPeriod.mock.calls[0];
+      // PHT day is 2026-08-24, so UTC start = 2026-08-23T16:00:00Z
+      expect(dailyPeriod.start.toISOString()).toBe('2026-08-23T16:00:00.000Z');
+      expect(dailyPeriod.end.toISOString()).toBe('2026-08-24T16:00:00.000Z');
+    });
+
+    it('00:00:00.000 PHT of the next day falls in a new period (boundary start = midnight PHT today)', async () => {
+      mockRepo.sumByPeriod.mockResolvedValue('0.00');
+
+      await service.checkLimits('uid', '1.00', FIRST_MS_OF_NEXT_DAY_PHT);
+
+      const [, dailyPeriod] = mockRepo.sumByPeriod.mock.calls[0];
+      // PHT day is now 2026-08-25, so UTC start = 2026-08-24T16:00:00Z
+      expect(dailyPeriod.start.toISOString()).toBe('2026-08-24T16:00:00.000Z');
+      expect(dailyPeriod.end.toISOString()).toBe('2026-08-25T16:00:00.000Z');
+    });
+  });
+
+  describe('PHT monthly reset boundary', () => {
+    // Last millisecond of PHT August 2026 → 2026-08-31T15:59:59.999Z
+    const LAST_MS_OF_MONTH_PHT = new Date('2026-08-31T15:59:59.999Z');
+    // First millisecond of PHT September 2026 → 2026-08-31T16:00:00.000Z
+    const FIRST_MS_OF_NEXT_MONTH_PHT = new Date('2026-08-31T16:00:00.000Z');
+
+    it('last millisecond of PHT month counts in that month', async () => {
+      mockRepo.sumByPeriod.mockResolvedValue('0.00');
+
+      await service.checkLimits('uid', '1.00', LAST_MS_OF_MONTH_PHT);
+
+      const [, monthlyPeriod] = mockRepo.sumByPeriod.mock.calls[1];
+      // PHT month is August 2026, UTC start = 2026-07-31T16:00:00Z
+      expect(monthlyPeriod.start.toISOString()).toBe('2026-07-31T16:00:00.000Z');
+      expect(monthlyPeriod.end.toISOString()).toBe('2026-08-31T16:00:00.000Z');
+    });
+
+    it('first millisecond of PHT next month starts a fresh period', async () => {
+      mockRepo.sumByPeriod.mockResolvedValue('0.00');
+
+      await service.checkLimits('uid', '1.00', FIRST_MS_OF_NEXT_MONTH_PHT);
+
+      const [, monthlyPeriod] = mockRepo.sumByPeriod.mock.calls[1];
+      // PHT month is now September 2026, UTC start = 2026-08-31T16:00:00Z
+      expect(monthlyPeriod.start.toISOString()).toBe('2026-08-31T16:00:00.000Z');
+      expect(monthlyPeriod.end.toISOString()).toBe('2026-09-30T16:00:00.000Z');
+    });
+  });
+
+  describe('exact limit boundaries', () => {
+    it('allows a transaction that brings monthly total to exactly ₱500,000', async () => {
+      mockRepo.sumByPeriod
+        .mockResolvedValueOnce('0.00')        // daily — no issue
+        .mockResolvedValueOnce('499000.00');  // monthly spent
+
+      const result = await service.checkLimits('uid', '1000.00', NOW);
+
+      expect(result).toEqual({ allowed: true });
+    });
+
+    it('rejects when monthly spent + amount would be ₱500,000.01', async () => {
+      mockRepo.sumByPeriod
+        .mockResolvedValueOnce('0.00')
+        .mockResolvedValueOnce('499999.99');
+
+      const result = await service.checkLimits('uid', '0.02', NOW);
+
+      expect(result).toMatchObject({
+        allowed: false,
+        reason: 'MONTHLY_LIMIT_EXCEEDED',
+        remaining: '0.01',
+      });
+    });
+
+    it('allows a transaction that brings daily total to exactly ₱50,000', async () => {
+      mockRepo.sumByPeriod
+        .mockResolvedValueOnce('49999.01') // daily
+        .mockResolvedValueOnce('0.00');    // monthly
+
+      const result = await service.checkLimits('uid', '0.99', NOW);
+
+      expect(result).toEqual({ allowed: true });
+    });
+
+    it('rejects when daily spent + amount would be ₱50,000.01', async () => {
+      mockRepo.sumByPeriod
+        .mockResolvedValueOnce('49999.99')
+        .mockResolvedValueOnce('0.00');
+
+      const result = await service.checkLimits('uid', '0.02', NOW);
+
+      expect(result).toMatchObject({
+        allowed: false,
+        reason: 'DAILY_LIMIT_EXCEEDED',
+        remaining: '0.01',
+      });
+    });
+  });
+
   // ─── Task 6.2: checkLimits ─────────────────────────────────────────────────
 
   describe('checkLimits', () => {

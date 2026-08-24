@@ -1,19 +1,14 @@
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import type { TransactionService } from '../../services/transaction.service';
 import type { LimitService } from '../../services/limit.service';
-
-const AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
+import { amountSchema } from '../../domain/schemas';
 
 const CreateTransactionBody = z.object({
-  senderId: z.string().min(1),
-  recipientId: z.string().min(1),
-  amount: z
-    .string()
-    .regex(AMOUNT_REGEX, 'Amount must be a positive decimal with at most 2 decimal places')
-    .refine((v) => new Prisma.Decimal(v).gt(0), { message: 'Amount must be greater than zero' }),
+  senderId: z.string().min(1).describe('UUID of the sender user'),
+  recipientId: z.string().min(1).describe('UUID of the recipient user'),
+  amount: amountSchema,
 });
 
 const TransactionResponse = z.object({

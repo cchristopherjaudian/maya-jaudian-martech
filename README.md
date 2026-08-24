@@ -165,7 +165,9 @@ npm run test:coverage
 Daily and monthly periods reset at **midnight Asia/Manila (PHT, UTC+8)**. All period boundary computation happens in application code using Luxon — the database session timezone is never set. Period start/end instants are passed to the database as UTC `Date` values.
 
 ### Monetary representation
-`amount` is accepted and returned as a **decimal string** (e.g. `"1500.00"`) to avoid IEEE 754 float precision errors. All arithmetic uses `Prisma.Decimal` (backed by `decimal.js`). The database stores `NUMERIC(15,2)` with a `CHECK (amount > 0)` constraint.
+`amount` is accepted and returned as a **decimal string** (e.g. `"1500.00"`), not a JSON number.
+
+> **Why a string?** JSON numbers use IEEE 754 floating point, which cannot represent values like `1500.10` exactly — e.g. `0.1 + 0.2` evaluates to `0.30000000000000004` in JavaScript, not `0.3`. For a financial limit check, even a tiny float error can cause a transaction that should be blocked to pass, or vice versa. Sending a string preserves the exact decimal value all the way to the server. The application then uses `Prisma.Decimal` (backed by `decimal.js`) for all arithmetic, and the database stores amounts as `NUMERIC(15,2)` — both are exact. This is standard practice in fintech APIs — Stripe, for example, uses the same string-based approach for monetary amounts.
 
 ### Concurrent send-money safety
 Each send-money request acquires a `SELECT ... FOR UPDATE` row lock on the sender's user row inside a Prisma interactive transaction. This serialises concurrent requests from the same sender at the database level. The second concurrent request blocks until the first commits and then re-reads the updated aggregate — preventing double-spend under race conditions.
