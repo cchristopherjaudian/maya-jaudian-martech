@@ -7,8 +7,8 @@ import type { UserService } from '../../services/user.service';
 import { amountSchema } from '../../domain/schemas';
 
 const CreateTransactionBody = z.object({
-  senderId: z.string().min(1).describe('UUID of the sender user'),
-  recipientId: z.string().min(1).describe('UUID of the recipient user'),
+  senderId: z.string().uuid().describe('UUID of the sender user'),
+  recipientId: z.string().uuid().describe('UUID of the recipient user'),
   amount: amountSchema,
 });
 
@@ -22,7 +22,7 @@ const TransactionResponse = z.object({
   createdAt: z.string(),
 });
 
-const UserParams = z.object({ userId: z.string() });
+const UserParams = z.object({ userId: z.string().uuid() });
 
 const PaginationQuery = z.object({
   page: z.coerce.number().int().positive().optional(),

@@ -162,6 +162,8 @@ npm run test:integration  # integration tests — requires a reachable PostgreSQ
 
 Integration tests (`tests/*.integration.test.ts`) exercise the full HTTP stack against a real database. They connect to `TEST_DATABASE_URL` (defaults to `postgresql://martech_user:martech_pass@localhost:5432/martech_test_db`, i.e. the same Postgres instance started by `docker compose up`, using a separate database). A global setup step creates that database if missing and (re)applies the schema from `prisma/migrations` before each run; `beforeEach` truncates all tables so tests never see another test's data.
 
+See [`docs/integration-test-report.md`](docs/integration-test-report.md) for what each integration test covers, its requirement traceability, the last recorded run, and known limitations.
+
 ---
 
 ## Assumptions and Design Decisions
@@ -186,6 +188,12 @@ All endpoints are open (no auth layer). This is an explicit assessment constrain
 ### Amount validation
 The Zod schema for `amount` enforces the regex `/^\d+(\.\d{1,2})?$/` plus a positive-value check. Values like `"0"`, `"-1.00"`, `"1.999"`, and `"abc"` are rejected with `422 VALIDATION_ERROR`.
 
+### Mobile number validation
+`mobileNumber` on `POST /api/users` must be in **E.164 format** — a leading `+`, a non-zero first digit, then up to 14 more digits, with no spaces or separators (e.g. `"+639171234567"`). Values like `"09171234567"` (missing `+`), `"+63 917 123 4567"` (spaces), or `"abc"` are rejected with `422 VALIDATION_ERROR`.
+
+### UUID validation on identifiers
+Every endpoint that accepts a user-identifying ID — `senderId`/`recipientId` on `POST /api/transactions`, and `userId` on `GET /api/users/:userId`, `GET /api/users/:userId/limits`, and `GET /api/users/:userId/transactions` — validates the ID as a well-formed UUID at the Zod layer. A malformed ID returns `422 VALIDATION_ERROR` before ever reaching the database; a well-formed but unknown ID returns `404 USER_NOT_FOUND`.
+
 ---
 
 ## Failure Cases
@@ -198,6 +206,8 @@ The Zod schema for `amount` enforces the regex `/^\d+(\.\d{1,2})?$/` plus a posi
 | Daily limit exceeded | 422 | `DAILY_LIMIT_EXCEEDED` |
 | Monthly limit exceeded | 422 | `MONTHLY_LIMIT_EXCEEDED` |
 | Invalid amount format | 422 | `VALIDATION_ERROR` |
+| Invalid mobile number format | 422 | `VALIDATION_ERROR` |
+| Malformed UUID (senderId, recipientId, userId) | 422 | `VALIDATION_ERROR` |
 | Unexpected server error | 500 | `INTERNAL_SERVER_ERROR` |
 
 ---
@@ -209,5 +219,4 @@ The Zod schema for `amount` enforces the regex `/^\d+(\.\d{1,2})?$/` plus a posi
 3. **Connection pooling** — default Prisma pool. Production would configure `connection_limit` and use PgBouncer.
 4. **Rate limiting** — no per-IP or per-user rate limiting.
 5. **Observability** — structured logging is in place (Pino) but no distributed tracing or metrics (Prometheus/OpenTelemetry).
-6. **Mobile number validation** — currently any non-empty string is accepted. Production would enforce E.164 format.
 7. **Integration test isolation** — integration tests currently reuse the `docker compose` Postgres instance via a dedicated `martech_test_db` database. Testcontainers would give each CI run a fully disposable database instead.

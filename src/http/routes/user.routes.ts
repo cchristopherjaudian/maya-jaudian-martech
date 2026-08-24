@@ -2,9 +2,10 @@ import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import type { UserService } from '../../services/user.service';
+import { mobileNumberSchema } from '../../domain/schemas';
 
 const CreateUserBody = z.object({
-  mobileNumber: z.string().min(1),
+  mobileNumber: mobileNumberSchema,
   firstName: z.string().min(1),
   lastName: z.string().min(1),
 });
@@ -18,7 +19,7 @@ const UserResponse = z.object({
   updatedAt: z.string(),
 });
 
-const UserParams = z.object({ userId: z.string() });
+const UserParams = z.object({ userId: z.string().uuid() });
 
 export function userRoutes(userService: UserService) {
   return async function (app: FastifyInstance) {

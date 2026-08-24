@@ -12,6 +12,7 @@ import {
 const NOW = new Date('2026-08-24T10:00:00.000Z');
 const SENDER_ID = 'a1b2c3d4-e5f6-4789-8abc-def012345678';
 const RECIPIENT_ID = 'b2c3d4e5-f6a7-4890-9bcd-ef0123456789';
+const MISSING_USER_ID = 'c3d4e5f6-a7b8-4901-abcd-f01234567890';
 
 const mockTx = {
   id: 'tx-uuid-1',
@@ -138,6 +139,18 @@ describe('Transaction Routes', () => {
       });
       expect(res.statusCode).toBe(422);
     });
+
+    it('returns 422 VALIDATION_ERROR when senderId is not a well-formed UUID, without calling the service', async () => {
+      const app = buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/transactions',
+        payload: { senderId: 'not-a-uuid', recipientId: RECIPIENT_ID, amount: '100.00' },
+      });
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error).toBe('VALIDATION_ERROR');
+      expect(mockTransactionService.sendMoney).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /api/users/:userId/limits', () => {
@@ -155,19 +168,27 @@ describe('Transaction Routes', () => {
     });
 
     it('returns 404 on UserNotFoundError from getLimitUsage', async () => {
-      mockUserService.getUserById.mockResolvedValue({ id: 'x' });
-      mockLimitService.getLimitUsage.mockRejectedValue(new UserNotFoundError('x'));
+      mockUserService.getUserById.mockResolvedValue({ id: MISSING_USER_ID });
+      mockLimitService.getLimitUsage.mockRejectedValue(new UserNotFoundError(MISSING_USER_ID));
       const app = buildApp();
-      const res = await app.inject({ method: 'GET', url: '/api/users/x/limits' });
+      const res = await app.inject({ method: 'GET', url: `/api/users/${MISSING_USER_ID}/limits` });
       expect(res.statusCode).toBe(404);
     });
 
     it('returns 404 when the user does not exist, without calling getLimitUsage', async () => {
-      mockUserService.getUserById.mockRejectedValue(new UserNotFoundError('x'));
+      mockUserService.getUserById.mockRejectedValue(new UserNotFoundError(MISSING_USER_ID));
       const app = buildApp();
-      const res = await app.inject({ method: 'GET', url: '/api/users/x/limits' });
+      const res = await app.inject({ method: 'GET', url: `/api/users/${MISSING_USER_ID}/limits` });
       expect(res.statusCode).toBe(404);
       expect(mockLimitService.getLimitUsage).not.toHaveBeenCalled();
+    });
+
+    it('returns 422 VALIDATION_ERROR when userId is not a well-formed UUID', async () => {
+      const app = buildApp();
+      const res = await app.inject({ method: 'GET', url: '/api/users/not-a-uuid/limits' });
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error).toBe('VALIDATION_ERROR');
+      expect(mockUserService.getUserById).not.toHaveBeenCalled();
     });
   });
 
@@ -190,10 +211,18 @@ describe('Transaction Routes', () => {
     });
 
     it('returns 404 on UserNotFoundError', async () => {
-      mockTransactionService.getTransactionHistory.mockRejectedValue(new UserNotFoundError('x'));
+      mockTransactionService.getTransactionHistory.mockRejectedValue(new UserNotFoundError(MISSING_USER_ID));
       const app = buildApp();
-      const res = await app.inject({ method: 'GET', url: '/api/users/x/transactions' });
+      const res = await app.inject({ method: 'GET', url: `/api/users/${MISSING_USER_ID}/transactions` });
       expect(res.statusCode).toBe(404);
+    });
+
+    it('returns 422 VALIDATION_ERROR when userId is not a well-formed UUID', async () => {
+      const app = buildApp();
+      const res = await app.inject({ method: 'GET', url: '/api/users/not-a-uuid/transactions' });
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error).toBe('VALIDATION_ERROR');
+      expect(mockTransactionService.getTransactionHistory).not.toHaveBeenCalled();
     });
   });
 });

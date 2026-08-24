@@ -6,9 +6,11 @@ import { userRoutes } from './user.routes';
 import { UserNotFoundError, DuplicateMobileNumberError } from '../../domain';
 
 const NOW = new Date('2026-08-24T10:00:00.000Z');
+const USER_ID = 'a1b2c3d4-e5f6-4789-8abc-def012345678';
+const MISSING_USER_ID = 'b2c3d4e5-f6a7-4890-9bcd-ef0123456789';
 
 const mockUser = {
-  id: 'user-uuid-1',
+  id: USER_ID,
   mobileNumber: '+639171234001',
   firstName: 'Ana',
   lastName: 'Garcia',
@@ -42,7 +44,7 @@ describe('User Routes', () => {
       expect(res.statusCode).toBe(200);
       const body = res.json();
       expect(Array.isArray(body)).toBe(true);
-      expect(body[0].id).toBe('user-uuid-1');
+      expect(body[0].id).toBe(USER_ID);
       expect(typeof body[0].createdAt).toBe('string');
     });
 
@@ -66,7 +68,7 @@ describe('User Routes', () => {
       });
       expect(res.statusCode).toBe(201);
       const body = res.json();
-      expect(body.id).toBe('user-uuid-1');
+      expect(body.id).toBe(USER_ID);
       expect(body.mobileNumber).toBe('+639171234001');
       expect(typeof body.createdAt).toBe('string');
     });
@@ -92,23 +94,43 @@ describe('User Routes', () => {
       });
       expect(res.statusCode).toBe(422);
     });
+
+    it('returns 422 VALIDATION_ERROR for a non-E.164 mobile number, without calling the service', async () => {
+      const app = buildApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/users',
+        payload: { mobileNumber: '09171234567', firstName: 'Ana', lastName: 'Garcia' },
+      });
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error).toBe('VALIDATION_ERROR');
+      expect(mockUserService.createUser).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /api/users/:userId', () => {
     it('returns 200 with user response when found', async () => {
       mockUserService.getUserById.mockResolvedValue(mockUser);
       const app = buildApp();
-      const res = await app.inject({ method: 'GET', url: '/api/users/user-uuid-1' });
+      const res = await app.inject({ method: 'GET', url: `/api/users/${USER_ID}` });
       expect(res.statusCode).toBe(200);
-      expect(res.json().id).toBe('user-uuid-1');
+      expect(res.json().id).toBe(USER_ID);
     });
 
     it('returns 404 when UserNotFoundError', async () => {
-      mockUserService.getUserById.mockRejectedValue(new UserNotFoundError('missing-id'));
+      mockUserService.getUserById.mockRejectedValue(new UserNotFoundError(MISSING_USER_ID));
       const app = buildApp();
-      const res = await app.inject({ method: 'GET', url: '/api/users/missing-id' });
+      const res = await app.inject({ method: 'GET', url: `/api/users/${MISSING_USER_ID}` });
       expect(res.statusCode).toBe(404);
       expect(res.json().error).toBe('USER_NOT_FOUND');
+    });
+
+    it('returns 422 VALIDATION_ERROR when userId is not a well-formed UUID, without reaching the service', async () => {
+      const app = buildApp();
+      const res = await app.inject({ method: 'GET', url: '/api/users/not-a-uuid' });
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error).toBe('VALIDATION_ERROR');
+      expect(mockUserService.getUserById).not.toHaveBeenCalled();
     });
   });
 });

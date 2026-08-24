@@ -10,6 +10,7 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.integration.test.ts'],
     exclude: ['node_modules', 'dist'],
+    reporters: ['verbose'],
     env: {
       DATABASE_URL: TEST_DATABASE_URL,
       NODE_ENV: 'test',
