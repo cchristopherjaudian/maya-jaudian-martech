@@ -1,2 +1,55 @@
 export type TransactionStatus = 'COMPLETED' | 'FAILED';
 export type { LimitBreachReason } from './errors';
+
+export interface CreateUserDto {
+  mobileNumber: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface User {
+  id: string;
+  mobileNumber: string;
+  firstName: string;
+  lastName: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateTransactionData {
+  senderId: string;
+  recipientId: string;
+  amount: string;
+  currency: 'PHP';
+  status: TransactionStatus;
+}
+
+export interface Transaction {
+  id: string;
+  senderId: string;
+  recipientId: string;
+  amount: string;
+  currency: string;
+  status: TransactionStatus;
+  createdAt: Date;
+}
+
+export interface PeriodBoundary {
+  start: Date;
+  end: Date;
+}
+
+export interface PaginationOptions {
+  page: number;
+  pageSize: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}

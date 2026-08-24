@@ -54,14 +54,14 @@
 
 - [ ] 4. Implement the repository layer
 
-- [ ] 4.1 (P) Implement UserRepository for all user persistence operations
+- [x] 4.1 (P) Implement UserRepository for all user persistence operations
   - Implement create: insert a new user record and translate any Prisma P2002 unique-constraint violation on mobile_number into a DuplicateMobileNumberError
   - Implement findById: return the User record or null given a UUID string
   - Implement findByMobileNumber: return the User record or null given a mobile number string
   - Depends on Task 2.1 for the generated Prisma client types and Task 3 for the error classes; can run in parallel with Task 4.2
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 2.4, 2.5_
 
-- [ ] 4.2 (P) Implement TransactionRepository for inserts, period aggregation, and history queries
+- [x] 4.2 (P) Implement TransactionRepository for inserts, period aggregation, and history queries
   - Implement create: insert a transaction record with explicit status; accept an optional Prisma transaction client (tx) for use inside atomic blocks
   - Implement sumByPeriod: execute a parameterised COALESCE(SUM(amount), 0) query on rows where sender_id matches, status is COMPLETED, and created_at falls within the provided UTC start–end range; forward the optional tx client so the query shares a connection with the caller's database transaction
   - Implement findByUserId: return paginated transactions where the user appears as either sender or recipient, ordered by created_at descending; include a count query to populate pagination metadata

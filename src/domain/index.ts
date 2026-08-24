@@ -10,4 +10,13 @@ export {
 
 export { DAILY_LIMIT, MONTHLY_LIMIT } from './constants';
 
-export { type TransactionStatus } from './types';
+export {
+  type TransactionStatus,
+  type CreateUserDto,
+  type User,
+  type CreateTransactionData,
+  type Transaction,
+  type PeriodBoundary,
+  type PaginationOptions,
+  type PaginatedResult,
+} from './types';
