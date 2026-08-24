@@ -25,6 +25,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  const port = process.env['PORT'] ?? '3000';
   await app.register(swagger, {
     openapi: {
       info: {
@@ -32,6 +33,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
         version: '1.0.0',
         description: 'PHP send-money service with daily and monthly spending limits (Asia/Manila timezone)',
       },
+      servers: [{ url: `http://localhost:${port}`, description: 'Local' }],
     },
     transform: jsonSchemaTransform,
   });

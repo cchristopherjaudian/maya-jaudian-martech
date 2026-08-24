@@ -125,6 +125,7 @@ curl -s "http://localhost:3000/api/users/<user-uuid>/transactions?page=1&pageSiz
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/api/users` | List all registered users (newest first) — added to make seeded user IDs discoverable for manual testing |
 | POST | `/api/users` | Register a new user |
 | GET | `/api/users/:userId` | Look up a user by UUID |
 | POST | `/api/transactions` | Send money (enforces limits) |

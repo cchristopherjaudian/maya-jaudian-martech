@@ -136,6 +136,14 @@
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.4, 6.5_
 
 - [x] 8.4 Wire the application entry point, health check, graceful shutdown, and project README
+
+- [x] 8.5 Add GET /api/users endpoint to list all users
+  - Implement UserRepository.findAll returning all user records ordered by createdAt descending
+  - Register GET /api/users in the user router with a 200 response schema returning an array of UserResponse objects
+  - Update UserService to expose a listUsers method delegating to UserRepository.findAll
+  - Update README API endpoints table and design.md API contract table to document the new endpoint
+  - Reason: seeded users have no discoverable IDs without a list endpoint, making manual Swagger UI testing impractical
+  - _Requirements: 1.1, 6.1, 6.2_
   - Create the main entry point: call loadConfig, instantiate the Prisma client, construct all repositories, services, and the Fastify app in dependency order, and start listening; exit with a non-zero code and ConfigError message if startup validation fails
   - Register GET /health returning { status: "ok", timestamp: ISO string } for the Docker health check
   - Register SIGTERM and SIGINT handlers that close the Fastify server and disconnect the Prisma client cleanly

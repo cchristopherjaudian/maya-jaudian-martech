@@ -219,6 +219,7 @@ graph LR
 
 | Method | Endpoint | Request Body / Params | Success Response | Error Codes |
 |--------|----------|-----------------------|-----------------|-------------|
+| GET | /api/users | — | 200 `UserResponse[]` | 500 |
 | POST | /api/users | `CreateUserRequest` | 201 `UserResponse` | 409, 422, 500 |
 | GET | /api/users/:userId | params: `userId` (UUID) | 200 `UserResponse` | 404, 500 |
 | POST | /api/transactions | `CreateTransactionRequest` | 201 `TransactionResponse` | 404, 422, 500 |

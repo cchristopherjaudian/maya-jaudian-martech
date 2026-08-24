@@ -16,6 +16,7 @@ const mockPrisma = {
   user: {
     create: vi.fn(),
     findUnique: vi.fn(),
+    findMany: vi.fn(),
   },
 };
 
@@ -81,6 +82,27 @@ describe('UserRepository', () => {
       const result = await repo.findById('nonexistent-id');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('findAll', () => {
+    it('returns all users ordered by createdAt descending', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([mockUser]);
+
+      const result = await repo.findAll();
+
+      expect(result).toEqual([mockUser]);
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+        orderBy: { createdAt: 'desc' },
+      });
+    });
+
+    it('returns an empty array when no users exist', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+
+      const result = await repo.findAll();
+
+      expect(result).toEqual([]);
     });
   });
 

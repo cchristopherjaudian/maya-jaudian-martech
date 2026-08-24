@@ -15,6 +15,7 @@ const mockRepo = {
   create: vi.fn(),
   findById: vi.fn(),
   findByMobileNumber: vi.fn(),
+  findAll: vi.fn(),
 };
 
 describe('UserService', () => {
@@ -49,6 +50,25 @@ describe('UserService', () => {
       await expect(
         service.createUser({ mobileNumber: '+639171234001', firstName: 'Ana', lastName: 'Garcia' }),
       ).rejects.toThrow(DuplicateMobileNumberError);
+    });
+  });
+
+  describe('listUsers', () => {
+    it('returns all users from the repository', async () => {
+      mockRepo.findAll.mockResolvedValue([mockUser]);
+
+      const result = await service.listUsers();
+
+      expect(result).toEqual([mockUser]);
+      expect(mockRepo.findAll).toHaveBeenCalledOnce();
+    });
+
+    it('returns an empty array when no users exist', async () => {
+      mockRepo.findAll.mockResolvedValue([]);
+
+      const result = await service.listUsers();
+
+      expect(result).toEqual([]);
     });
   });
 

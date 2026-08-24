@@ -24,6 +24,27 @@ export function userRoutes(userService: UserService) {
   return async function (app: FastifyInstance) {
     const typed = app.withTypeProvider<ZodTypeProvider>();
 
+    typed.get(
+      '/users',
+      {
+        schema: {
+          response: { 200: z.array(UserResponse) },
+          tags: ['Users'],
+          description: 'List all registered users, ordered by registration date (newest first)',
+        },
+      },
+      async (_request, reply) => {
+        const users = await userService.listUsers();
+        return reply.send(
+          users.map((u) => ({
+            ...u,
+            createdAt: u.createdAt.toISOString(),
+            updatedAt: u.updatedAt.toISOString(),
+          })),
+        );
+      },
+    );
+
     typed.post(
       '/users',
       {

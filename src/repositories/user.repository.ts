@@ -23,4 +23,8 @@ export class UserRepository {
   async findByMobileNumber(mobileNumber: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { mobileNumber } });
   }
+
+  async findAll(): Promise<User[]> {
+    return this.prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  }
 }

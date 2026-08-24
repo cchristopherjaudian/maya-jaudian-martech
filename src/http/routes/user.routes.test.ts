@@ -19,6 +19,7 @@ const mockUser = {
 const mockUserService = {
   createUser: vi.fn(),
   getUserById: vi.fn(),
+  listUsers: vi.fn(),
 };
 
 function buildApp() {
@@ -32,6 +33,27 @@ function buildApp() {
 
 describe('User Routes', () => {
   beforeEach(() => vi.resetAllMocks());
+
+  describe('GET /api/users', () => {
+    it('returns 200 with an array of users', async () => {
+      mockUserService.listUsers.mockResolvedValue([mockUser]);
+      const app = buildApp();
+      const res = await app.inject({ method: 'GET', url: '/api/users' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(Array.isArray(body)).toBe(true);
+      expect(body[0].id).toBe('user-uuid-1');
+      expect(typeof body[0].createdAt).toBe('string');
+    });
+
+    it('returns an empty array when no users exist', async () => {
+      mockUserService.listUsers.mockResolvedValue([]);
+      const app = buildApp();
+      const res = await app.inject({ method: 'GET', url: '/api/users' });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual([]);
+    });
+  });
 
   describe('POST /api/users', () => {
     it('returns 201 with user response on success', async () => {
