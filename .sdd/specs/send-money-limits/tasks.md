@@ -43,7 +43,7 @@
 
 ---
 
-- [ ] 3. (P) Define the domain error hierarchy, limit constants, and shared status types
+- [x] 3. (P) Define the domain error hierarchy, limit constants, and shared status types
   - Create typed error classes extending a base AppError for every domain failure: UserNotFoundError, DuplicateMobileNumberError, LimitExceededError (carrying breach reason, the applicable limit, and the remaining amount), SelfTransferError, InvalidAmountError, and ConfigError
   - Export DAILY_LIMIT (50 000) and MONTHLY_LIMIT (500 000) as typed numeric constants
   - Define TransactionStatus as a discriminated union (COMPLETED | FAILED) and LimitBreachReason as a union (DAILY_LIMIT_EXCEEDED | MONTHLY_LIMIT_EXCEEDED)
