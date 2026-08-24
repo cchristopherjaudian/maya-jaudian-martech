@@ -34,8 +34,8 @@ describe('amountSchema', () => {
 });
 
 describe('mobileNumberSchema', () => {
-  describe('valid E.164 mobile numbers', () => {
-    const valid = ['+639171234567', '+639991234567', '+14155552671', '+442071838750'];
+  describe('valid PH mobile numbers (+63 followed by exactly 10 digits, not starting with 0)', () => {
+    const valid = ['+639171234567', '+639991234567', '+631234567890'];
 
     valid.forEach((v) => {
       it(`accepts "${v}"`, () => {
@@ -47,14 +47,17 @@ describe('mobileNumberSchema', () => {
   describe('invalid mobile numbers', () => {
     const cases: [string, string][] = [
       ['', 'empty string'],
-      ['09171234567', 'missing leading +'],
-      ['+0171234567', 'leading zero after country code'],
+      ['09171234567', 'missing leading +63'],
+      ['9171234567', 'missing + and country code entirely'],
+      ['+14155552671', 'non-PH country code'],
       ['+63 917 123 4567', 'contains spaces'],
       ['+63-917-123-4567', 'contains dashes'],
+      ['+63917123456', 'only 9 digits after +63'],
+      ['+6391712345678', '11 digits after +63'],
+      ['+630907389171', 'starts with 0 after +63'],
       ['+639171234567abc', 'trailing non-digit characters'],
       ['abcdefghijk', 'non-numeric string'],
-      ['+1', 'too short to be a real number'],
-      ['+1234567890123456', 'more than 15 digits'],
+      ['+63', 'country code with no subscriber number'],
     ];
 
     cases.forEach(([v, reason]) => {

@@ -119,6 +119,21 @@ curl -s "http://localhost:3000/api/users/<user-uuid>/transactions?page=1&pageSiz
 
 > Seeded user IDs are printed by the seed script and visible in the `/api/users` responses. Use the Swagger UI at `/docs` to explore all endpoints interactively.
 
+### 5. Testing the monthly limit
+
+The daily cap (₱50,000) makes the monthly cap (₱500,000) impractical to reach by hand — you'd hit the daily block long before accumulating half a million pesos in one sitting. Since `POST /api/transactions` always uses the server's real clock, the monthly cap can't be reached through the API alone within a single day.
+
+To make this testable, the seed data parks **Rosa Mendoza** ₱20,000 short of the monthly cap via a transaction dated earlier this month (so it counts toward her monthly total but not today's daily total):
+
+1. Open Swagger UI at `/docs` and run `GET /api/users` to find `Rosa Mendoza`'s `id` and `Pedro Torres`'s `id`.
+2. Run `GET /api/users/{rosaId}/limits` — `daily.spent` is `"0.00"`, `monthly.spent` is `"480000.00"`, `monthly.remaining` is `"20000.00"`.
+3. Run `POST /api/transactions` with:
+   ```json
+   { "senderId": "<rosaId>", "recipientId": "<pedroId>", "amount": "25000.00" }
+   ```
+   This stays under Rosa's ₱50,000 daily cap but pushes her monthly total to ₱505,000 — expect `422` with `error: "MONTHLY_LIMIT_EXCEEDED"` and `details: { remaining: "20000.00", limit: 500000 }`.
+4. Run `GET /api/users/{rosaId}/limits` again to confirm `monthly.spent` is unchanged at `"480000.00"` — the breached attempt was not persisted as `COMPLETED`.
+
 ---
 
 ## API Endpoints
@@ -189,7 +204,7 @@ All endpoints are open (no auth layer). This is an explicit assessment constrain
 The Zod schema for `amount` enforces the regex `/^\d+(\.\d{1,2})?$/` plus a positive-value check. Values like `"0"`, `"-1.00"`, `"1.999"`, and `"abc"` are rejected with `422 VALIDATION_ERROR`.
 
 ### Mobile number validation
-`mobileNumber` on `POST /api/users` must be in **E.164 format** — a leading `+`, a non-zero first digit, then up to 14 more digits, with no spaces or separators (e.g. `"+639171234567"`). Values like `"09171234567"` (missing `+`), `"+63 917 123 4567"` (spaces), or `"abc"` are rejected with `422 VALIDATION_ERROR`.
+`mobileNumber` on `POST /api/users` must be a **PH mobile number**: `+63` followed by exactly 10 digits that do not start with `0`, with no spaces or separators (e.g. `"+639171234567"`). Values like `"09171234567"` (missing `+63`), `"+630907389171"` (starts with `0` after `+63`), `"+63 917 123 4567"` (spaces), `"+14155552671"` (non-PH country code), or a number with the wrong digit count are rejected with `422 VALIDATION_ERROR`.
 
 ### UUID validation on identifiers
 Every endpoint that accepts a user-identifying ID — `senderId`/`recipientId` on `POST /api/transactions`, and `userId` on `GET /api/users/:userId`, `GET /api/users/:userId/limits`, and `GET /api/users/:userId/transactions` — validates the ID as a well-formed UUID at the Zod layer. A malformed ID returns `422 VALIDATION_ERROR` before ever reaching the database; a well-formed but unknown ID returns `404 USER_NOT_FOUND`.

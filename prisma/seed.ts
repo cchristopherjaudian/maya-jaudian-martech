@@ -56,6 +56,10 @@ async function main(): Promise<void> {
     { senderId: juan.id, recipientId: ana.id, amount: '8000.00', status: TransactionStatus.COMPLETED, createdAt: firstOfMonth },
     // A failed transaction for audit trail (does NOT count toward limits)
     { senderId: maria.id, recipientId: jose.id, amount: '2000.00', status: TransactionStatus.FAILED, createdAt: todayMorning },
+    // Rosa is parked ₱20,000 short of the monthly cap, with nothing spent today,
+    // so a single Swagger request can demonstrate MONTHLY_LIMIT_EXCEEDED without
+    // also tripping the daily cap — see the README's "Testing the monthly limit" section.
+    { senderId: rosa.id, recipientId: pedro.id, amount: '480000.00', status: TransactionStatus.COMPLETED, createdAt: firstOfMonth },
   ];
 
   for (const tx of transactions) {
@@ -79,7 +83,7 @@ async function main(): Promise<void> {
   console.log('  Juan Dela Cruz(+639171234002) — daily spent:  ₱3,000 | monthly spent: ₱11,000');
   console.log('  Maria Santos  (+639171234003) — no completed sends');
   console.log('  Jose Reyes    (+639171234004) — no completed sends');
-  console.log('  Rosa Mendoza  (+639171234005) — no completed sends');
+  console.log('  Rosa Mendoza  (+639171234005) — daily spent:      ₱0 | monthly spent: ₱480,000 (₱20,000 remaining — see README "Testing the monthly limit")');
   console.log('  Pedro Torres  (+639171234006) — no completed sends');
 }
 

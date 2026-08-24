@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
 const AMOUNT_REGEX = /^\d+(\.\d{1,2})?$/;
-// E.164: a leading '+', a non-zero first digit, then up to 14 more digits (max 15 digits total).
-const E164_REGEX = /^\+[1-9]\d{1,14}$/;
+// PH mobile number: '+63' country code, then exactly 10 subscriber digits not starting with 0.
+const PH_MOBILE_REGEX = /^\+63[1-9]\d{9}$/;
 
 export const amountSchema = z
   .string()
@@ -31,5 +31,8 @@ export const amountSchema = z
 export const mobileNumberSchema = z
   .string()
   .min(1, 'Mobile number is required')
-  .regex(E164_REGEX, 'Mobile number must be in E.164 format (e.g. "+639171234567")')
-  .describe('Mobile number in E.164 format: a leading "+", country code, and subscriber number, with no spaces or separators (e.g. "+639171234567").');
+  .regex(
+    PH_MOBILE_REGEX,
+    'Mobile number must be a PH number in the format "+63" followed by exactly 10 digits, not starting with 0 (e.g. "+639171234567")',
+  )
+  .describe('Philippine mobile number: "+63" followed by exactly 10 subscriber digits not starting with 0, no spaces or separators (e.g. "+639171234567").');
