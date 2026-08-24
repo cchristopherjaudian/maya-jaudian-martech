@@ -12,13 +12,13 @@
   - Configure Vitest with TypeScript support and test file glob patterns
   - _Requirements: 7.1, 7.2_
 
-- [ ] 1.2 Set up Docker Compose, Dockerfile, and environment configuration files
+- [x] 1.2 Set up Docker Compose, Dockerfile, and environment configuration files
   - Write a multi-stage Dockerfile: a build stage that compiles TypeScript and a slim runtime stage using node:22-alpine
   - Write docker-compose.yml with the application service and a PostgreSQL 16 service, including a health check on the database and a `depends_on` condition so the app waits until the database is healthy
   - Create .env.example listing all required variables (DATABASE_URL, PORT, NODE_ENV, LOG_LEVEL) with placeholder values and one-line descriptions
   - _Requirements: 7.1, 7.2, 7.3_
 
-- [ ] 1.3 Implement the Config module with fail-fast environment validation
+- [x] 1.3 Implement the Config module with fail-fast environment validation
   - Define a Zod schema that parses and validates all required environment variables at module load time
   - Throw a ConfigError that names the missing or invalid variable if validation fails, so the process exits with a clear message before the server starts
   - Export a typed AppConfig object that the rest of the application imports instead of accessing process.env directly
