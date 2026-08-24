@@ -169,11 +169,13 @@ Copy `.env.example` to `.env` and adjust as needed:
 ## Running Tests
 
 ```bash
-npm install
-npm test                  # unit tests — no database required
+npm install                # also generates the Prisma client via a postinstall hook
+npm test                   # unit tests — no database required
 npm run test:coverage
-npm run test:integration  # integration tests — requires a reachable PostgreSQL instance
+npm run test:integration   # integration tests — requires a reachable PostgreSQL instance
 ```
+
+> If `npm install` prints `[postinstall] Skipped: prisma generate failed`, your local Node version is below Prisma 7's requirement (`^20.19 || ^22.12 || >=24.0`) — this only affects local `npm test`, not `docker compose up --build`. Fix it by upgrading Node, or by running the generation step manually on a supported version: `DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate`.
 
 Integration tests (`tests/*.integration.test.ts`) exercise the full HTTP stack against a real database. They connect to `TEST_DATABASE_URL` (defaults to `postgresql://martech_user:martech_pass@localhost:5432/martech_test_db`, i.e. the same Postgres instance started by `docker compose up`, using a separate database). A global setup step creates that database if missing and (re)applies the schema from `prisma/migrations` before each run; `beforeEach` truncates all tables so tests never see another test's data.
 

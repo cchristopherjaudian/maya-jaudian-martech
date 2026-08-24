@@ -3,12 +3,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
-
+COPY scripts ./scripts
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-# prisma generate only reads the schema — DATABASE_URL is not used but required by prisma.config.ts at load time
-RUN DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate
+# postinstall (see package.json) runs `prisma generate` as part of this — it only
+# reads the schema, but prisma.config.ts requires DATABASE_URL to be set to load at all,
+# so postinstall falls back to a placeholder when it isn't.
+RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -21,16 +22,15 @@ WORKDIR /app
 
 # Install all deps including devDependencies so ts-node is available for the seed script
 COPY package*.json ./
+COPY scripts ./scripts
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+# postinstall (see package.json) generates the Prisma client for this platform
 RUN npm ci
 
 ENV NODE_ENV=production
 
 COPY --from=builder /app/dist ./dist
-COPY prisma ./prisma
-COPY prisma.config.ts ./
-
-# Generate the Prisma client for this platform
-RUN DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate
 
 EXPOSE 3000
 
