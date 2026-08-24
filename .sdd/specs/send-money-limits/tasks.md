@@ -113,29 +113,29 @@
 
 ---
 
-- [ ] 8. Build the HTTP layer, Swagger documentation, and application bootstrap
+- [x] 8. Build the HTTP layer, Swagger documentation, and application bootstrap
 
-- [ ] 8.1 Bootstrap the Fastify application with plugins and the global error handler
+- [x] 8.1 Bootstrap the Fastify application with plugins and the global error handler
   - Register fastify-type-provider-zod as the type provider so Zod schemas drive both runtime validation and TypeScript inference for every route
   - Register @fastify/swagger with an OpenAPI 3.x info block (title, version, description) and @fastify/swagger-ui served at the /docs path with the Swagger UI bundle
   - Register a global setErrorHandler that maps each domain error class to its HTTP status code and serialises the response as a standard ErrorEnvelope (statusCode, error code, message, optional details object)
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 8.2 (P) Implement user management routes and UserController
+- [x] 8.2 (P) Implement user management routes and UserController
   - Register POST /api/users with a Zod body schema (mobileNumber string, firstName string, lastName string), a 201 UserResponse schema, and a 409 error schema; delegate to UserService.createUser; map DuplicateMobileNumberError to 409 via the global error handler
   - Register GET /api/users/:userId with UUID param validation and a 200 UserResponse schema; delegate to UserService.getUserById; map UserNotFoundError to 404
   - Response schema fields must use plain Zod shapes without .transform() to preserve accurate OpenAPI output
   - Can start in parallel with Task 8.3 after Task 8.1 is complete
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 6.1, 6.2, 6.4, 6.5_
 
-- [ ] 8.3 (P) Implement transaction, limit usage, and history routes with TransactionController
+- [x] 8.3 (P) Implement transaction, limit usage, and history routes with TransactionController
   - Register POST /api/transactions with a Zod body schema accepting senderId (UUID string), recipientId (UUID string), and amount (string validated by /^\d+(\.\d{1,2})?$/ with a positive Prisma.Decimal check); inject new Date() as the now parameter when calling TransactionService.sendMoney; map LimitExceededError to 422 with remaining and limit in the details field
   - Register GET /api/users/:userId/limits; inject new Date() when calling LimitService.getLimitUsage; return the LimitUsageResponse including timezone tag and resetsAt fields
   - Register GET /api/users/:userId/transactions with optional page and pageSize query params (both positive integers); delegate to TransactionService.getTransactionHistory; return TransactionHistoryResponse with the full pagination metadata block
   - Can start in parallel with Task 8.2 after Task 8.1 is complete
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 4.1, 4.2, 4.3, 4.4, 4.5, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 6.1, 6.2, 6.4, 6.5_
 
-- [ ] 8.4 Wire the application entry point, health check, graceful shutdown, and project README
+- [x] 8.4 Wire the application entry point, health check, graceful shutdown, and project README
   - Create the main entry point: call loadConfig, instantiate the Prisma client, construct all repositories, services, and the Fastify app in dependency order, and start listening; exit with a non-zero code and ConfigError message if startup validation fails
   - Register GET /health returning { status: "ok", timestamp: ISO string } for the Docker health check
   - Register SIGTERM and SIGINT handlers that close the Fastify server and disconnect the Prisma client cleanly
