@@ -28,7 +28,7 @@
 
 - [ ] 2. Define the database schema, generate migrations, and seed sample data
 
-- [ ] 2.1 Define the Prisma schema and generate the initial database migration
+- [x] 2.1 Define the Prisma schema and generate the initial database migration
   - Add the User model with a UUID primary key, a unique mobile_number field, first and last name fields, and TIMESTAMPTZ audit columns (createdAt, updatedAt)
   - Add the Transaction model with a UUID primary key, sender and recipient foreign keys to User, a NUMERIC(15,2) amount field with a positive check constraint, a PHP currency field, a status field (COMPLETED or FAILED), and a TIMESTAMPTZ createdAt column set by the database
   - Define composite indexes on (sender_id, created_at DESC) and (recipient_id, created_at DESC) to support efficient limit aggregation and history queries
