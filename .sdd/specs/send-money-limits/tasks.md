@@ -70,7 +70,7 @@
 
 ---
 
-- [ ] 5. (P) Implement UserService for user creation and lookup
+- [x] 5. (P) Implement UserService for user creation and lookup
   - Implement createUser: delegate to UserRepository.create and surface DuplicateMobileNumberError to callers on conflict
   - Implement getUserById: delegate to UserRepository.findById and throw UserNotFoundError when the result is null
   - Depends on Task 4.1; can start in parallel with Task 6 once Task 4.1 is complete
