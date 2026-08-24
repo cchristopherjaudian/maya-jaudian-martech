@@ -19,4 +19,7 @@ export {
   type PeriodBoundary,
   type PaginationOptions,
   type PaginatedResult,
+  type LimitCheckResult,
+  type PeriodUsage,
+  type LimitUsage,
 } from './types';

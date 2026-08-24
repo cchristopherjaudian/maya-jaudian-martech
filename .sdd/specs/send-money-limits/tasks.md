@@ -80,14 +80,14 @@
 
 - [ ] 6. Implement LimitService for timezone-aware period boundaries, limit checks, and usage queries
 
-- [ ] 6.1 Implement Asia/Manila period boundary computation using Luxon
+- [x] 6.1 Implement Asia/Manila period boundary computation using Luxon
   - Compute the start of the current PHT calendar day and the start of tomorrow (exclusive end) as UTC Date objects using Luxon's setZone and startOf APIs
   - Compute the start of the current PHT calendar month and the start of the next month as UTC Date objects using the same approach
   - Compute the next daily reset instant (midnight PHT) and next monthly reset instant (first second of next month PHT) to include in limit usage responses
   - Never set the database session timezone; always pass UTC Date values to repository queries
   - _Requirements: 3.1, 3.2, 3.8, 3.9_
 
-- [ ] 6.2 Implement limit check logic and real-time limit usage aggregation
+- [x] 6.2 Implement limit check logic and real-time limit usage aggregation
   - Implement checkLimits: call sumByPeriod for the daily period then the monthly period, forwarding the optional tx client both times; evaluate the daily cap first — if spent + amount exceeds DAILY_LIMIT return a DAILY_LIMIT_EXCEEDED result; then evaluate the monthly cap; use Prisma.Decimal for all arithmetic to avoid IEEE 754 float errors
   - Implement getLimitUsage: call sumByPeriod for both periods without a tx client, then compute spent, remaining (clamped to zero), and resetsAt for each; return the full LimitUsage structure with userId, asOf timestamp, and timezone tag
   - _Requirements: 3.3, 3.4, 3.5, 3.6, 3.7, 3.10, 4.1, 4.2, 4.3, 4.4, 4.5_

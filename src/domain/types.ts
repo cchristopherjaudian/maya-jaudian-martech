@@ -1,5 +1,7 @@
+import type { LimitBreachReason } from './errors';
+
 export type TransactionStatus = 'COMPLETED' | 'FAILED';
-export type { LimitBreachReason } from './errors';
+export type { LimitBreachReason };
 
 export interface CreateUserDto {
   mobileNumber: string;
@@ -52,4 +54,23 @@ export interface PaginatedResult<T> {
     total: number;
     totalPages: number;
   };
+}
+
+export type LimitCheckResult =
+  | { allowed: true }
+  | { allowed: false; reason: LimitBreachReason; remaining: string; limit: number };
+
+export interface PeriodUsage {
+  limit: number;
+  spent: string;
+  remaining: string;
+  resetsAt: Date;
+}
+
+export interface LimitUsage {
+  userId: string;
+  asOf: Date;
+  timezone: 'Asia/Manila';
+  daily: PeriodUsage;
+  monthly: PeriodUsage;
 }
