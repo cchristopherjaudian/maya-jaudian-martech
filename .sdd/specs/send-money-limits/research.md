@@ -149,13 +149,46 @@
 
 ---
 
+### Decision: `tx` Threading Through `LimitService` (Post-Validation Fix)
+
+- **Context**: Design review identified that `LimitService.checkLimits` calling `TransactionRepository.sumByPeriod` via the default `PrismaClient` (not the `tx` client) inside `prisma.$transaction()` would compete for a pooled connection, causing a deadlock when `connection_limit` is small or under concurrent load.
+- **Alternatives Considered**:
+  1. Run `sumByPeriod` before starting the transaction — removes the deadlock but loses the atomicity benefit of the `FOR UPDATE` lock covering the read.
+  2. Thread `tx` through `checkLimits` — preserves atomicity and avoids pool contention.
+- **Selected Approach**: Add `tx?: PrismaTransactionClient` parameter to `LimitService.checkLimits`; forward it to `TransactionRepository.sumByPeriod`. When inside a Prisma interactive transaction, always pass `tx`.
+- **Rationale**: All limit-aggregation queries run on the same connection as the `FOR UPDATE` lock, ensuring they see a consistent snapshot within the transaction and avoiding pool exhaustion.
+- **Trade-offs**: Slightly more coupled interface (domain service receives infra type `PrismaTransactionClient`); acceptable for assessment scope.
+
+---
+
+### Decision: `amount` Accepted as `string` in Request Body (Post-Validation Fix)
+
+- **Context**: Design review identified that accepting `amount: number` and validating ≤2 decimal places with `Number.isInteger(amount * 100)` is unreliable due to IEEE 754 float arithmetic — `1500.10 * 100 === 150010.00000000002` in JavaScript, causing false rejections of valid amounts.
+- **Alternatives Considered**:
+  1. Accept `number`, round to 2dp before validation — introduces silent rounding, could accept out-of-spec values.
+  2. Accept `string`, validate with regex — deterministic, no float involvement.
+- **Selected Approach**: Accept `amount` as `string` in `CreateTransactionRequest`. Validate with Zod: `z.string().regex(/^\d+(\.\d{1,2})?$/).refine(v => new Prisma.Decimal(v).gt(0), 'Must be positive')`.
+- **Rationale**: Regex-based validation is exact and immune to float precision issues. The service layer already uses `string` for amount; this removes the number→string conversion step from the controller entirely.
+- **Trade-offs**: API consumers must send amounts as JSON strings (`"amount": "1500.00"`) rather than numbers — standard practice for financial APIs; documented in OpenAPI schema.
+
+---
+
+### Decision: `Prisma.Decimal` for All Monetary Arithmetic (Post-Validation Fix)
+
+- **Context**: Initial design referenced `decimal.js` for limit arithmetic but did not list it in the Technology Stack. Prisma 7 already exports `Prisma.Decimal` (backed by `decimal.js`) from `@prisma/client`, creating ambiguity about whether to add a separate `decimal.js` dependency.
+- **Selected Approach**: Use `Prisma.Decimal` exclusively for all monetary comparisons and arithmetic. No additional `decimal.js` package added.
+- **Rationale**: Zero additional dependency; type-compatible with Prisma's returned `Decimal` column values (`NUMERIC(15,2)` → `Prisma.Decimal`); same underlying library, single source of truth.
+- **Trade-offs**: Couples monetary arithmetic to Prisma's re-export — if Prisma is ever removed, `decimal.js` would need to be added explicitly. Acceptable for this service scope.
+
+---
+
 ## Risks & Mitigations
 
 - **Timezone tzdata drift** (Asia/Manila tzdata changes) — Mitigation: pin `tzdata` version in Docker image; use Luxon's bundled timezone database.
 - **Prisma 7 ecosystem maturity** — Mitigation: Prisma 7 is stable (v7.8.0 as of Aug 2026), production-used widely; no blocking known issues.
 - **Zod `.transform()` in OpenAPI** — Mitigation: avoid `.transform()` entirely in response schema definitions; transformations happen at service layer before controller shapes the response.
-- **Float precision in seed data** — Mitigation: seed amounts are specified as string literals parsed by Prisma `Decimal` to avoid any float imprecision at seed time.
-- **Concurrent limit breach under high load** — Mitigation: `SELECT FOR UPDATE` serializes per-sender; acceptable latency trade-off at assessment scale.
+- **Float precision in seed data** — Mitigation: seed amounts are specified as string literals parsed by `Prisma.Decimal` to avoid any float imprecision at seed time.
+- **Concurrent limit breach under high load** — Mitigation: `SELECT FOR UPDATE` serializes per-sender; `tx` threading ensures aggregation runs on the same connection; acceptable latency trade-off at assessment scale.
 
 ---
 

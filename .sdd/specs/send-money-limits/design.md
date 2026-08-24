@@ -98,6 +98,7 @@ graph TB
 | API Docs | @fastify/swagger + @fastify/swagger-ui | OpenAPI 3.x spec + interactive UI at `/docs` | Auto-generated from route schema registrations |
 | Validation | Zod v3 | Request schema validation and TS inference | Response shapes use plain Zod (no `.transform()`) |
 | ORM | Prisma 7 | Database access, migrations, seed | Pure TS runtime (Prisma 7 dropped Rust engine) |
+| Monetary arithmetic | `Prisma.Decimal` (via `@prisma/client`) | Exact decimal math for limit checks and comparisons | Already bundled with Prisma 7; no additional `decimal.js` dependency needed |
 | Database | PostgreSQL 16 | Primary data store | TIMESTAMPTZ for all timestamps (UTC) |
 | Timezone | Luxon | PHT boundary computation | `DateTime.now().setZone('Asia/Manila').startOf('day')` |
 | Testing | Vitest | Unit + integration test runner | `@vitest/coverage-v8` for coverage |
@@ -127,7 +128,7 @@ sequenceDiagram
         TS-->>TC: UserNotFoundError
         TC-->>C: 404 Not Found
     end
-    TS->>LS: checkLimits(senderId, amount, nowUtc)
+    TS->>LS: checkLimits(senderId, amount, nowUtc, tx)
     LS->>DB: SUM amount WHERE sender_id AND day_range
     LS->>DB: SUM amount WHERE sender_id AND month_range
     LS-->>TS: LimitCheckResult
@@ -144,7 +145,7 @@ sequenceDiagram
     end
 ```
 
-> The `FOR UPDATE` on the sender row serializes concurrent requests from the same sender at the database level. The second concurrent transaction blocks until the first commits, then re-reads the now-updated aggregate — preventing both from independently passing the limit check.
+> The `FOR UPDATE` on the sender row serializes concurrent requests from the same sender at the database level. The second concurrent transaction blocks until the first commits, then re-reads the now-updated aggregate — preventing both from independently passing the limit check. Crucially, `checkLimits` receives the `tx` client so that `sumByPeriod` runs on the same pooled connection; without this, an inner query on the default client would compete for a connection the outer transaction already holds, causing a deadlock.
 
 ### 2. PHT Period Boundary Computation
 
@@ -397,8 +398,8 @@ interface TransactionHistoryItem {
 - Invariants: The entire flow (lock → limit check → insert) executes within a single Prisma transaction.
 
 **Implementation Notes**
-- Integration: `prisma.$transaction(async (tx) => { await tx.$queryRaw\`SELECT id FROM users WHERE id = ${senderId} FOR UPDATE\`; ... })`.
-- Validation: Amount decimal-place check occurs at the Zod layer (router schema); service receives a validated string.
+- Integration: `prisma.$transaction(async (tx) => { await tx.$queryRaw\`SELECT id FROM users WHERE id = ${senderId} FOR UPDATE\`; await limitService.checkLimits(senderId, amount, now, tx); ... })`. The `tx` client is passed to `checkLimits` and forwarded to `sumByPeriod`, ensuring all queries within the atomic block share the same connection and avoid connection pool exhaustion.
+- Validation: `amount` is accepted as a `string` in the request body and validated at the Zod layer with regex `/^\d+(\.\d{1,2})?$/` plus a positive-value check. The service receives the validated string directly — no number-to-string conversion at the controller layer. This avoids IEEE 754 float precision failures (e.g., `1500.10 * 100 ≠ 150010` in JavaScript).
 - Risks: `FOR UPDATE` creates a bottleneck per sender under high concurrency — documented in README as a production revisit item.
 
 ---
@@ -423,7 +424,7 @@ const DAILY_LIMIT = 50_000;
 const MONTHLY_LIMIT = 500_000;
 
 interface LimitService {
-  checkLimits(senderId: string, amount: string, now: Date): Promise<LimitCheckResult>;
+  checkLimits(senderId: string, amount: string, now: Date, tx?: PrismaTransactionClient): Promise<LimitCheckResult>;
   getLimitUsage(userId: string, now: Date): Promise<LimitUsage>;
 }
 
@@ -461,7 +462,8 @@ interface PeriodBoundary {
 **Implementation Notes**
 - Boundary computation: `DateTime.fromJSDate(now).setZone('Asia/Manila').startOf('day').toUTC().toJSDate()` for daily start.
 - `sumByPeriod` returns `'0.00'` (string) when no transactions exist in range.
-- All arithmetic uses `Decimal` (via `decimal.js`) to avoid float errors: `new Decimal(spent).plus(amount).lte(limit)`.
+- All arithmetic uses `Prisma.Decimal` from `@prisma/client` to avoid float errors: `new Prisma.Decimal(spent).plus(amount).lte(limit)`. No additional `decimal.js` import needed.
+- The `tx` parameter (when provided) is forwarded to `TransactionRepository.sumByPeriod`, ensuring limit aggregation queries run on the same database connection as the enclosing `prisma.$transaction` — preventing connection pool exhaustion under concurrent load.
 
 ---
 
@@ -693,7 +695,7 @@ interface UserResponse {
 interface CreateTransactionRequest {
   senderId: string;    // UUID
   recipientId: string; // UUID
-  amount: number;      // positive, validated ≤2dp by Zod refine
+  amount: string;      // decimal string e.g. "1500.00"; validated by Zod regex /^\d+(\.\d{1,2})?$/ and must be > 0
 }
 interface TransactionResponse {
   id: string;
@@ -787,7 +789,7 @@ Cover pure business logic in isolation — no database, no HTTP.
 4. `LimitService` — PHT month boundary: transaction on last second of month counts in current month; first second of next month starts fresh.
 5. `LimitService.checkLimits` — daily breach reported before monthly breach when both would apply.
 6. `TransactionService.sendMoney` — `SelfTransferError` thrown when `senderId === recipientId`.
-7. Amount validation via Zod schema — rejects `0`, negative values, and values with >2 decimal places.
+7. Amount validation via Zod schema — rejects `"0"`, negative values (`"-1.00"`), values with >2 decimal places (`"1500.001"`), and non-numeric strings (`"abc"`); accepts `"1500.10"`, `"50000.00"`.
 
 ### Integration Tests (Vitest + real PostgreSQL)
 
