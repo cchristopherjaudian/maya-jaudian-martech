@@ -74,3 +74,19 @@ export interface LimitUsage {
   daily: PeriodUsage;
   monthly: PeriodUsage;
 }
+
+export interface CreateTransactionDto {
+  senderId: string;
+  recipientId: string;
+  amount: string;
+}
+
+export interface TransactionHistoryItem {
+  id: string;
+  counterpartId: string;
+  direction: 'SENT' | 'RECEIVED';
+  amount: string;
+  currency: string;
+  status: TransactionStatus;
+  createdAt: Date;
+}

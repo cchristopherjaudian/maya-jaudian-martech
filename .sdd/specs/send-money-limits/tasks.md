@@ -2,7 +2,7 @@
 
 ---
 
-- [ ] 1. Initialize the project, developer tooling, and environment configuration
+- [x] 1. Initialize the project, developer tooling, and environment configuration
 
 - [x] 1.1 Set up the TypeScript project with all runtime and development dependencies
   - Initialize a Node.js project and configure TypeScript 5.x with strict mode, ES module output, and path aliases
@@ -26,7 +26,7 @@
 
 ---
 
-- [ ] 2. Define the database schema, generate migrations, and seed sample data
+- [x] 2. Define the database schema, generate migrations, and seed sample data
 
 - [x] 2.1 Define the Prisma schema and generate the initial database migration
   - Add the User model with a UUID primary key, a unique mobile_number field, first and last name fields, and TIMESTAMPTZ audit columns (createdAt, updatedAt)
@@ -52,7 +52,7 @@
 
 ---
 
-- [ ] 4. Implement the repository layer
+- [x] 4. Implement the repository layer
 
 - [x] 4.1 (P) Implement UserRepository for all user persistence operations
   - Implement create: insert a new user record and translate any Prisma P2002 unique-constraint violation on mobile_number into a DuplicateMobileNumberError
@@ -78,7 +78,7 @@
 
 ---
 
-- [ ] 6. Implement LimitService for timezone-aware period boundaries, limit checks, and usage queries
+- [x] 6. Implement LimitService for timezone-aware period boundaries, limit checks, and usage queries
 
 - [x] 6.1 Implement Asia/Manila period boundary computation using Luxon
   - Compute the start of the current PHT calendar day and the start of tomorrow (exclusive end) as UTC Date objects using Luxon's setZone and startOf APIs
@@ -94,9 +94,9 @@
 
 ---
 
-- [ ] 7. Implement TransactionService for send-money orchestration and transaction history
+- [x] 7. Implement TransactionService for send-money orchestration and transaction history
 
-- [ ] 7.1 Implement the send-money flow with database locking and limit enforcement
+- [x] 7.1 Implement the send-money flow with database locking and limit enforcement
   - Open a Prisma interactive transaction and immediately issue a SELECT FOR UPDATE on the sender's user row to serialise concurrent requests from the same sender at the database level
   - Verify the sender exists (throw UserNotFoundError if not) and the recipient exists (throw UserNotFoundError if not), and confirm sender and recipient are different users (throw SelfTransferError if they match)
   - Call LimitService.checkLimits, passing the tx client so all aggregation queries run on the same pooled connection and see a consistent snapshot; on a limit breach, insert a FAILED transaction for audit and throw LimitExceededError carrying the breach reason, limit, and remaining
@@ -104,7 +104,7 @@
   - Accept a now: Date parameter injected by the controller so tests can supply a deterministic timestamp without mocking the system clock
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10_
 
-- [ ] 7.2 Implement transaction history retrieval with direction enrichment and pagination
+- [x] 7.2 Implement transaction history retrieval with direction enrichment and pagination
   - Verify the target user exists before querying; throw UserNotFoundError if not
   - Call TransactionRepository.findByUserId with the provided pagination options (page and pageSize, defaulting to page 1 and pageSize 20, capping pageSize at 100)
   - Enrich each raw transaction record with a direction field: SENT when the requesting userId matches sender_id, RECEIVED when it matches recipient_id

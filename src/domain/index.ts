@@ -22,4 +22,6 @@ export {
   type LimitCheckResult,
   type PeriodUsage,
   type LimitUsage,
+  type CreateTransactionDto,
+  type TransactionHistoryItem,
 } from './types';
